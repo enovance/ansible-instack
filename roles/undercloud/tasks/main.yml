@@ -4,13 +4,11 @@
   shell: echo 'export LIBVIRT_DEFAULT_URI="qemu:///system"' >> ~/.bashrc
 
 - name: Register the system
-  command: subscription-manager register --username='{{ rhn.username }' --password='{{ rhn.password }}'
-  with_dict: rhn
+  command: subscription-manager register --username="{{ rhn_username }}" --password="{{ rhn_password }}"
   sudo: true
   
 - name: Subscribe to the Openstack pool
-  command: subscription-manager attach --pool={{ rhn.poolid }}
-  with_dict: rhn
+  command: subscription-manager attach --pool={{ rhn_poolid }}
   sudo: true
 
 - name: Enable the Red Hat OpenStack 6 repository
