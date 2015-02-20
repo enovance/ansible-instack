@@ -1,0 +1,23 @@
+<network>
+  <name>undercloud-network</name>
+  <uuid>dda29ee6-57d3-4f6b-a9e2-88f0f978643c</uuid>
+  <forward mode='nat'>
+    <nat>
+      <port start='1024' end='65535'/>
+    </nat>
+  </forward>
+  <bridge name='virbr168' stp='on' delay='0' />
+  <mac address='52:54:00:43:00:00'/>
+  <domain name='example.com' />
+  <dns>
+    <host ip='192.168.143.5'>
+      <hostname>undercloud</hostname>
+    </host>
+  </dns>
+  <ip address='192.168.143.1' netmask='255.255.255.0'>
+    <dhcp>
+      <range start='192.168.143.2' end='192.168.143.254' />
+      <host mac='52:54:00:43:00:01' name='undercloud' ip='192.168.143.5' />
+    </dhcp>
+  </ip>
+</network>

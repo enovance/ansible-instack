@@ -1,0 +1,5 @@
+---
+rhn:
+  username: YOURUSERNAME
+  password: YOURPASSWORD
+  poolid: THEPOOLID

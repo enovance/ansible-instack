@@ -1,0 +1,45 @@
+---
+
+- name: Add export of LIBVIRT_DEFAULT_URI to your bashrc file
+  shell: echo 'export LIBVIRT_DEFAULT_URI="qemu:///system"' >> ~/.bashrc
+
+- name: Register the system
+  command: subscription-manager register --username='{{ rhn.username }' --password='{{ rhn.password }}'
+  with_dict: rhn
+  sudo: true
+  
+- name: Subscribe to the Openstack pool
+  command: subscription-manager attach --pool={{ rhn.poolid }}
+  with_dict: rhn
+  sudo: true
+
+- name: Enable the Red Hat OpenStack 6 repository
+  command: subscription-manager repos --enable rhel-7-server-openstack-6.0-rpms
+  sudo: true
+
+- name: Install the instack-undercloud package
+  yum: name=instack-undercloud
+  sudo: true
+
+- name: Get the rhel-guest-image-7.0-20140930.0.x86_64.qcow2
+  copy: src=undercloud_original.qcow2
+        dest=/tmp/
+  sudo: true
+
+- name: Generate environment variables to export
+  template: src=env.tmpl
+            dest=/home/stack/env.sh
+            mode=0750
+
+- name: Export the environment variables
+  shell: cat /home/stack/env.sh  >> /home/stack/.bashrc
+
+- name: Install dependencies (Part 1)
+  shell: echo 'source /usr/libexec/openstack-tripleo/devtest_variables.sh' >> /home/stack/.bashrc
+
+- name: Install dependencies (Part 2)
+  shell: tripleo install-dependencies
+
+- name: Install dependencies (Part 3)
+  shell: tripleo set-usergroup-membership
+  ignore_errors: yes

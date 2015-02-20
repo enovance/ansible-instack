@@ -1,0 +1,70 @@
+---
+- name: get guest info
+  virt: command=info
+  register: virt_info
+  sudo: True
+
+- name: undercloud-network network info
+  command: virsh net-list
+  register: virt_net_info
+  sudo: True
+
+- name: Destroy existing domains
+  virt: name=undercloud
+        state=destroyed
+        uri=qemu:///system
+  when: virt_info['undercloud']['state'] is defined and virt_info['undercloud']['state'] == 'running'
+  sudo: True
+
+- name: Clean up the domains
+  command: virsh undefine --remove-all-storage undercloud
+  when: virt_info['undercloud']['state'] is defined
+  sudo: True
+
+- name: Drop the network
+  command: virsh net-destroy undercloud-network
+  when: virt_net_info.stdout|search('undercloud-network')
+  sudo: True
+
+- command: find /tmp -maxdepth 1 -name 'undercloud*.xml' -delete
+  sudo: True
+
+- command: find /var/lib/libvirt/images -type f -and -not -iname '*_original.qcow2' -delete
+  sudo: True
+
+- command: cat ~/.ssh/id_rsa.pub
+  register: pub_key
+
+- template: src=user-data.tmpl dest=/tmp/user-data
+
+- name: Prepare the images
+  script: roles/hypervisor/files/prepare.sh
+  sudo: True
+
+- name: Copy network configuration on the host
+  copy: src=undercloud-network.xml
+        dest=/tmp/undercloud-network.xml
+
+- name: Configure the network
+  command: virsh net-create /tmp/undercloud-network.xml
+  sudo: True
+
+- name: copy domain file 
+  copy: src=undercloud.xml
+        dest=/tmp/undercloud.xml
+
+- name: Configure the different domains
+  command: virsh define /tmp/undercloud.xml
+  sudo: True
+
+- name: Start the domains
+  virt: name=undercloud
+        state=running
+        uri=qemu:///system
+  sudo: True
+
+- name: Wait for server to restart
+  local_action: wait_for host=192.168.143.5 port=22 timeout=600
+
+- name: sleep 10
+  shell: sleep 10
