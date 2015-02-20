@@ -3,29 +3,48 @@
 - name: Add export of LIBVIRT_DEFAULT_URI to your bashrc file
   shell: echo 'export LIBVIRT_DEFAULT_URI="qemu:///system"' >> ~/.bashrc
 
+  # RedHat
+  #
 - name: Register the system
   command: subscription-manager register --username="{{ rhn_username }}" --password="{{ rhn_password }}"
   sudo: true
+  when: ansible_distribution == 'RedHat'
   
 - name: Subscribe to the Openstack pool
   command: subscription-manager attach --pool={{ rhn_poolid }}
   sudo: true
+  when: ansible_distribution == 'RedHat'
 
 - name: Enable the Red Hat OpenStack 6 repository
   command: subscription-manager repos --enable rhel-7-server-openstack-6.0-rpms
   sudo: true
-
-- name: Install the instack-undercloud package
-  yum: name=instack-undercloud
-  sudo: true
+  when: ansible_distribution == 'RedHat'
 
 - name: Get the rhel-guest-image-7.0-20140930.0.x86_64.qcow2
   copy: src=undercloud_original.qcow2
         dest=/tmp/
   sudo: true
+  when: ansible_distribution == 'RedHat'
+
+  # Fedora
+  #
+- name: Install the RDO Juno packages
+  yum: name=http://rdo.fedorapeople.org/openstack-juno/rdo-release-juno.rpm
+  sudo: true
+  when: ansible_distribution == 'Fedora'
+  
+- name: Install the EPEL packages
+  yum: name=http://download.fedoraproject.org/pub/epel/7/x86_64/e/epel-release-7-5.noarch.rpm
+  sudo: true
+  when: ansible_distribution == 'Fedora'
+
+
+- name: Install the instack-undercloud package
+  yum: name=instack-undercloud
+  sudo: true
 
 - name: Generate environment variables to export
-  template: src=env.tmpl
+  template: src=env-{{ ansible_distribution }}.tmpl
             dest=/home/stack/env.sh
             mode=0750
 
@@ -40,4 +59,7 @@
 
 - name: Install dependencies (Part 3)
   shell: tripleo set-usergroup-membership
-  ignore_errors: yes
+  ignore_errors: True
+
+- name: run instack-virt-setup
+  shell: instack-virt-setup
